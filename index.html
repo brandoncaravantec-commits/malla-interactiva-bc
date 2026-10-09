@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Malla interactiva bc</title>
+<link rel="stylesheet" href="estilos.css"></head><body>
+<nav class="site-nav" aria-label="Navegación principal">
+  <a class="brand" href="index.html"><span class="brand-mark">bc<span>·</span></span><span>malla interactiva <b>bc</b></span></a>
+  <span class="nav-caption">Tu espacio de planificación</span>
+</nav>
+<header>
+  <div class="hero-copy"><span class="eyebrow" id="university">PONTIFICIA UNIVERSIDAD CATÓLICA DE CHILE</span>
+  <h1 id="careerTitle">Administración Pública</h1>
+  <p>Organiza tus semestres. Visualiza tus posibilidades.</p>
+  <div class="hero-meta"><span id="duration">10 semestres</span><span id="totalCredits">500 créditos</span><span>Plan personal</span></div></div>
+  <div class="career-picker"><label for="careerSelect">¿Qué carrera estás planificando?</label><select id="careerSelect"></select><p>Un espacio para cada carrera.<br>Un plan que se adapta a ti.</p></div>
+</header>
+<main><div class="section-heading"><div><span class="eyebrow">MI PLAN ACADÉMICO</span><h2>Así va tu avance</h2></div><span class="save-label">Guardado en este navegador</span></div><section class="stats" aria-label="Tu avance"><div class="stat"><span class="label">Avance en créditos</span><strong id="percent">0%</strong><div class="bar"><i id="progress"></i></div></div><div class="stat"><span class="label">Créditos aprobados</span><strong id="credits">0 / 500</strong></div><div class="stat"><span class="label">Ramos y requisitos aprobados</span><strong id="count">0</strong></div></section>
+<section class="workspace"><div class="section-heading"><div><span class="eyebrow">EXPLORA Y ORGANIZA</span><h2>Tu malla, a tu manera</h2></div><div class="board-controls"><button id="previousColumns" aria-label="Ver semestres anteriores">←</button><button id="nextColumns" aria-label="Ver semestres siguientes">→</button></div></div><div class="toolbar"><input id="search" type="search" placeholder="Buscar ramo o sigla…" aria-label="Buscar ramo o sigla"><select id="filter" aria-label="Filtrar por estado"><option value="all">Todos los estados</option><option value="approved">Aprobados</option><option value="current">En curso</option><option value="pending">Disponibles</option><option value="locked">Con requisitos pendientes</option></select><button id="addSemester">+ Semestre</button><details class="plan-menu"><summary>Opciones del plan</summary><div><button id="resetPlan">Restaurar distribución</button><button id="export">Guardar respaldo</button><button id="import">Cargar respaldo</button></div></details><input type="file" id="file" accept="application/json" hidden></div>
+<div id="feedback" role="status" aria-live="polite">Tu avance se guarda en este navegador.</div>
+<div class="legend"><span style="--cat:#b7a4c8"><i class="dot"></i>Disciplinares y otros</span><span style="--cat:#d6a0b8"><i class="dot"></i>Formación profesional</span><span style="--cat:#8ebcae"><i class="dot"></i>Minor</span><span style="--cat:#a5b9d7"><i class="dot"></i>Formación general</span><span style="--cat:#83b799"><i class="dot"></i>Aprobado</span></div>
+<div class="help-line"><span class="help-icon">↔</span><p>Arrastra para mover · Aprueba para desbloquear · Personaliza tus electivos en <b>Detalles</b></p></div><div class="semester-nav" id="semesterNav" aria-label="Ir a un semestre"></div>
+<section class="board" id="board" aria-label="Malla por semestre"></section></section><footer><span>malla interactiva <b>bc</b></span><span>Brandon Caravante</span></footer></main>
+<dialog id="detail" aria-labelledby="title">
+  <button id="close" class="close" aria-label="Cerrar">✕</button>
+  <h2 id="title"></h2><p id="description"></p>
+  <div id="dependencies"></div>
+  <label class="field" id="nameField">Nombre del curso elegido (OFG, minor u optativo)
+    <input id="customName" maxlength="120" placeholder="Ejemplo: Introducción a la fotografía">
+  </label>
+  <label class="field">Ubicar en semestre<select id="semesterSelect"></select></label>
+  <label class="field">Estado<select id="statusSelect"><option value="pending">Pendiente</option><option value="current">En curso</option><option value="approved">Aprobado</option></select></label>
+  <p id="warning" role="status"></p>
+  <button class="primary" id="saveDetail">Guardar cambios</button>
+</dialog>
+<script src="datos.js"></script>
+<script src="carreras.js"></script>
+<script src="logica.js"></script>
+<script src="app.js"></script></body></html>
+
