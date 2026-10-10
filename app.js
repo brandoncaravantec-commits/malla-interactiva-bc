@@ -65,13 +65,16 @@ function render() {
     const column = node('section','semester');
     column.id='semester-'+sem;
     column.setAttribute('aria-label', `Semestre ${sem}`);
-    const list = CURSOS.filter(c => Malla.semester(state,c) === sem);
+    const list = Malla.ordered(state,CURSOS,sem);
     column.append(node('h2','',`SEMESTRE ${sem}`));
     column.append(node('p','sub',`${list.length} ramos · ${list.reduce((sum,c)=>sum+c.credits,0)} créditos planificados`));
     // HTML Drag and Drop para escritorio. En móvil o con teclado usa Detalles.
     column.addEventListener('dragover', e => {
       if (!draggedId) return;
       e.preventDefault(); e.dataTransfer.dropEffect='move'; column.classList.add('over');
+      document.querySelectorAll('.drop-before,.drop-after').forEach(n=>n.classList.remove('drop-before','drop-after'));
+      const hit=e.target.closest('.course');
+      if(hit&&hit.dataset.courseId!==draggedId) hit.classList.add(e.clientY < hit.getBoundingClientRect().top+hit.getBoundingClientRect().height/2?'drop-before':'drop-after');
     });
     column.addEventListener('dragleave', e => {
       if (!column.contains(e.relatedTarget)) column.classList.remove('over');
@@ -81,7 +84,15 @@ function render() {
       const course = find(draggedId);
       draggedId=null;
       if (!course) return;
-      Malla.move(state,course,sem);
+      const target=Malla.ordered(state,CURSOS,sem).filter(c=>c.id!==course.id);
+      const hit=e.target.closest('.course');
+      let index=target.length;
+      if(hit) {
+        if(hit.dataset.courseId===course.id) { render(); return; }
+        const found=target.findIndex(c=>c.id===hit.dataset.courseId);
+        if(found>=0) index=found+(e.clientY >= hit.getBoundingClientRect().top+hit.getBoundingClientRect().height/2?1:0);
+      }
+      Malla.moveAt(state,course,sem,index,CURSOS);
       if(save()) announce(`${Malla.name(state,course)} movido al semestre ${sem}.`);
       render();
     });
@@ -103,12 +114,13 @@ function card(c) {
   const card = node('article',`course ${status} ${status==='pending'?'available':''}`);
   card.style.setProperty('--cat', COLORS[c.cat]);
   card.draggable = true;
+  card.dataset.courseId=c.id;
   card.addEventListener('dragstart', e => {
     draggedId=c.id; e.dataTransfer.setData('text/plain',c.id); e.dataTransfer.effectAllowed='move';
   });
   card.addEventListener('dragend', () => {
     draggedId=null;
-    document.querySelectorAll('.over').forEach(n=>n.classList.remove('over'));
+    document.querySelectorAll('.over,.drop-before,.drop-after').forEach(n=>n.classList.remove('over','drop-before','drop-after'));
   });
   card.append(node('h3','',Malla.name(state,c)));
   if (Malla.entry(state,c.id).name) card.append(node('div','slot',c.name));
@@ -124,18 +136,29 @@ function card(c) {
   details.setAttribute('aria-label',`Detalles de ${Malla.name(state,c)}`);
   details.onclick=()=>openDetail(c);
   actions.append(approve,details); card.append(actions);
+  const orderActions=node('div','order-actions');
+  const siblings=Malla.ordered(state,CURSOS,Malla.semester(state,c));
+  const currentIndex=siblings.findIndex(r=>r.id===c.id);
+  for(const [label,delta] of [['↑',-1],['↓',1]]) {
+    const button=node('button','',label);button.type='button';
+    button.setAttribute('aria-label',(delta<0?'Subir ':'Bajar ')+Malla.name(state,c));
+    button.disabled=currentIndex+delta<0||currentIndex+delta>=siblings.length;
+    button.onclick=()=>{Malla.moveAt(state,c,Malla.semester(state,c),currentIndex+delta,CURSOS);if(save()) announce('Orden guardado.');render();const refreshed=document.querySelector('[data-course-id="'+c.id+'"]');refreshed?.querySelector('.order-actions button:nth-child('+(delta<0?1:2)+')')?.focus({preventScroll:true});};
+    orderActions.append(button);
+  }
+  orderActions.prepend(node('span','', 'Ordenar'));card.append(orderActions);
   return card;
 }
 
-function applyStatus(next,c,value) {
+async function applyStatus(next,c,value) {
   const changed=Malla.setStatus(next,c,value,CURSOS);
-  if (changed.length && !confirm(`Este cambio dejará pendientes ${changed.length} ramos dependientes: ${changed.map(id=>Malla.name(next,find(id))).join(', ')}. ¿Continuar?`)) return false;
+  if (changed.length && !await askConfirmation(`Este cambio dejará pendientes ${changed.length} ramos dependientes: ${changed.map(id=>Malla.name(next,find(id))).join(', ')}. ¿Continuar?`)) return false;
   return true;
 }
-function updateStatus(c,value) {
-  const next=structuredClone(state);
+async function updateStatus(c,value) {
+  const next=clonePlan(state);
   try {
-    if(!applyStatus(next,c,value)) return;
+    if(!await applyStatus(next,c,value)) return;
     state=next;
     if(save()) announce('Avance guardado. Se actualizaron los ramos habilitados.');
     render();
@@ -158,19 +181,20 @@ function openDetail(c) {
     const option=node('option','',`Semestre ${sem}`); option.value=sem; $('semesterSelect').append(option);
   }
   $('semesterSelect').value=Malla.semester(state,c);
+  fillPositions();
   $('statusSelect').value=Malla.entry(state,c.id).status||'pending';
   const blocked=Malla.missing(state,c).length>0;
   [...$('statusSelect').options].forEach(o=>o.disabled=blocked&&o.value!=='pending');
   $('warning').textContent=blocked?'Puedes mover este ramo, pero para cursarlo o aprobarlo necesitas completar sus prerrequisitos.':'';
-  $('detail').showModal();
+  openPanel($('detail'));
 }
-$('close').onclick=()=>$('detail').close();
-$('saveDetail').onclick=()=>{
-  const next=structuredClone(state);
+$('close').onclick=()=>closePanel($('detail'));
+$('saveDetail').onclick=async()=>{
+  const next=clonePlan(state);
   try {
-    Malla.move(next,selected,Number($('semesterSelect').value));
+    Malla.moveAt(next,selected,Number($('semesterSelect').value),Number($('positionSelect').value),CURSOS);
     if(selected.editable) next.courses[selected.id].name=$('customName').value.trim();
-    if(!applyStatus(next,selected,$('statusSelect').value)) return;
+    if(!await applyStatus(next,selected,$('statusSelect').value)) return;
     state=next;
     if(save()) announce('Cambios guardados.');
     render(); $('detail').close();
@@ -184,10 +208,10 @@ $('addSemester').onclick=()=>{
   if(save()) announce(`Se agregó el semestre ${state.semesters}.`);
   render(); $('board').scrollLeft=$('board').scrollWidth;
 };
-$('resetPlan').onclick=()=>{
-  if(!confirm('¿Volver a los '+CARRERA.semesters+' semestres originales? Se conservarán tus aprobaciones, los nombres y los ramos agregados en su semestre de creación.')) return;
+$('resetPlan').onclick=async()=>{
+  if(!await askConfirmation('¿Volver a los '+CARRERA.semesters+' semestres originales? Se conservarán tus aprobaciones, los nombres y los ramos agregados en su semestre de creación.')) return;
   state.semesters=Math.max(CARRERA.semesters,...state.customCourses.map(c=>c.sem));
-  Object.values(state.courses).forEach(v=>delete v.semester);
+  Object.values(state.courses).forEach(v=>{delete v.semester;delete v.order;});
   if(save()) announce('Distribución original restaurada.');
   render();
 };
@@ -205,7 +229,7 @@ $('file').onchange=async()=>{
     if(raw.careerId ? raw.careerId!==CARRERA.id : CARRERA.id!=='uc-administracion-publica') throw Error('Este respaldo corresponde a otra carrera.');
     const next=Malla.validate(raw,CARRERA.courses,CARRERA.semesters);
     const adjusted=Malla.reconcile(next,[...CARRERA.courses,...next.customCourses]);
-    if(!confirm(`¿Reemplazar tu plan con este respaldo?${adjusted.length?' Los estados incompatibles con los prerrequisitos se cambiarán a pendiente.':''}`)) return;
+    if(!await askConfirmation(`¿Reemplazar tu plan con este respaldo?${adjusted.length?' Los estados incompatibles con los prerrequisitos se cambiarán a pendiente.':''}`)) return;
     state=next;
     if(save()) announce('Respaldo cargado.');
     render();
@@ -227,12 +251,9 @@ $('careerSelect').onchange=()=>{
 };
 $('previousColumns').onclick=()=>$('board').scrollBy({left:-500,behavior:'smooth'});
 $('nextColumns').onclick=()=>$('board').scrollBy({left:500,behavior:'smooth'});
-render();
-
-
 // El reinicio afecta exclusivamente a la carrera activa, no a otras carreras.
-$('resetAll').onclick=()=>{
-  if(!confirm('¿Reiniciar toda la malla de '+CARRERA.name+'? Se borrarán aprobaciones, ramos en curso, nombres personalizados, movimientos, semestres extra y ramos agregados. Puedes cancelar y guardar un respaldo primero.')) return;
+$('resetAll').onclick=async()=>{
+  if(!await askConfirmation('¿Reiniciar toda la malla de '+CARRERA.name+'? Se borrarán aprobaciones, ramos en curso, nombres personalizados, movimientos, semestres extra y ramos agregados. Puedes cancelar y guardar un respaldo primero.')) return;
   state=Malla.initial(CARRERA.semesters);
   selected=null; draggedId=null;
   $('search').value=''; $('filter').value='all';
@@ -251,16 +272,18 @@ $('addCourse').onclick=()=>{
     label.append(input,document.createTextNode(' '+Malla.name(state,c)+(c.code?' ('+c.code+')':'')));
     $('newRequirements').append(label);
   }
-  $('newCourse').showModal(); $('newName').focus();
+  openPanel($('newCourse')); $('newName').focus();
 };
-$('closeNewCourse').onclick=()=>$('newCourse').close();
+$('closeNewCourse').onclick=()=>closePanel($('newCourse'));
 $('newCourseForm').onsubmit=e=>{
   e.preventDefault();
   try {
-    const next=structuredClone(state);
+    const next=clonePlan(state);
     const id='custom-'+(globalThis.crypto?.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
     next.customCourses.push({id,name:$('newName').value.trim(),code:$('newCode').value.trim(),credits:Number($('newCredits').value),sem:Number($('newSemester').value),cat:$('newCategory').value,requires:[...$('newRequirements').querySelectorAll('input:checked')].map(n=>n.value),editable:true});
     state=Malla.validate(next,CARRERA.courses,CARRERA.semesters);
+    const all=[...CARRERA.courses,...state.customCourses],added=all.find(c=>c.id===id);
+    Malla.moveAt(state,added,added.sem,Malla.ordered(state,all,added.sem).filter(c=>c.id!==id).length,all);
     $('search').value=''; $('filter').value='all';
     if(save()) announce('Ramo agregado a tu plan. También se incluirá en tus respaldos.');
     render(); $('newCourse').close();
@@ -268,3 +291,24 @@ $('newCourseForm').onsubmit=e=>{
     $('board').scrollTo({left:target.offsetLeft-$('board').offsetLeft,behavior:'smooth'});
   } catch(e) { $('newCourseError').textContent=e.message; }
 };
+
+function fillPositions() {
+  const sem=Number($('semesterSelect').value);
+  const all=Malla.ordered(state,CURSOS,sem);
+  const peers=all.filter(c=>c.id!==selected.id);
+  const oldIndex=all.findIndex(c=>c.id===selected.id);
+  $('positionSelect').replaceChildren();
+  for(let i=0;i<=peers.length;i++) {
+    const text=i===peers.length?'Al final':i===0?'Al principio':'Antes de '+Malla.name(state,peers[i]);
+    const option=node('option','',(i+1)+'. '+text);option.value=i;$('positionSelect').append(option);
+  }
+  $('positionSelect').value=oldIndex<0?peers.length:oldIndex;
+}
+$('semesterSelect').onchange=fillPositions;
+const THEME_KEY='malla-bc-theme';
+let theme='pink';
+try {const savedTheme=localStorage.getItem(THEME_KEY);if(['pink','uc','dark'].includes(savedTheme)) theme=savedTheme;}catch{}
+function applyTheme(value) {document.documentElement.dataset.theme=value;$('themeSelect').value=value;}
+applyTheme(theme);
+$('themeSelect').onchange=()=>{applyTheme($('themeSelect').value);try{localStorage.setItem(THEME_KEY,$('themeSelect').value);}catch{announce('Tema aplicado durante esta sesión.');}};
+render();

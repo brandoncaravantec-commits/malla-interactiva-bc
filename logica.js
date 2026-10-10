@@ -15,6 +15,21 @@ const Malla = (() => {
     state.courses[c.id] = {...entry(state,c.id), semester:sem};
   }
 
+  function ordered(state,courses,sem) {
+    return courses.map((c,index)=>({c,index})).filter(({c})=>semester(state,c)===sem)
+      .sort((a,b)=>(entry(state,a.c.id).order ?? a.index)-(entry(state,b.c.id).order ?? b.index)||a.index-b.index).map(({c})=>c);
+  }
+  // Posición desde cero, calculada sin incluir el ramo que se está moviendo.
+  function moveAt(state,c,sem,index,courses) {
+    const source=semester(state,c);
+    const target=ordered(state,courses,sem).filter(r=>r.id!==c.id);
+    if(!Number.isInteger(index)||index<0||index>target.length) throw Error('Posición inválida.');
+    move(state,c,sem);
+    target.splice(index,0,c);
+    target.forEach((r,i)=>state.courses[r.id]={...entry(state,r.id),order:i});
+    if(source!==sem) ordered(state,courses,source).forEach((r,i)=>state.courses[r.id]={...entry(state,r.id),order:i});
+  }
+
   // Si se desmarca un prerrequisito, sus dependientes vuelven a pendiente.
   // Repetimos hasta cubrir la cadena completa, sin depender del orden de los ramos.
   function reconcile(state,courses) {
@@ -80,6 +95,10 @@ const Malla = (() => {
       const c=courses.find(r=>r.id===id);
       if(!c || !value || typeof value!=='object' || Array.isArray(value)) throw Error('Ramo inválido en respaldo.');
       const v={};
+      if(value.order!==undefined) {
+        if(!Number.isInteger(value.order)||value.order<0||value.order>courses.length) throw Error('Posición inválida en respaldo.');
+        v.order=value.order;
+      }
       if(value.semester!==undefined) {
         if(!Number.isInteger(value.semester)||value.semester<1||value.semester>raw.semesters) throw Error('Semestre inválido en respaldo.');
         v.semester=value.semester;
@@ -96,6 +115,6 @@ const Malla = (() => {
     }
     return clean;
   }
-  return {MAX_SEMESTRES,initial,entry,semester,name,missing,status,move,reconcile,setStatus,conflicts,validate};
+  return {MAX_SEMESTRES,initial,entry,semester,name,missing,status,move,moveAt,ordered,reconcile,setStatus,conflicts,validate};
 })();
 if(typeof module!=='undefined') module.exports=Malla;

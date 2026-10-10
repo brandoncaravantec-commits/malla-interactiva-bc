@@ -10,3 +10,75 @@ dialog{border:1px solid var(--line);border-radius:21px;padding:27px;width:min(55
 @media(min-width:1700px){.board{grid-auto-columns:230px}}@media(max-width:850px){header{padding:25px;gap:20px}.career-picker{min-width:220px}.stats{gap:10px}.stat{padding:17px}.toolbar input{flex-basis:100%}.save-label{display:none}}@media(max-width:600px){.site-nav{padding:14px 20px}.brand{font-size:15px}.brand-mark{width:36px;height:36px;font-size:22px}.nav-caption{display:none}header{margin:16px 16px 0;padding:24px;display:block;border-radius:19px}h1{font-size:30px;letter-spacing:-1px}header p{font-size:13px}.hero-meta{margin-top:16px}.career-picker{max-width:none;margin-top:22px;padding:15px}.career-picker p{display:none}main{padding:23px 16px 0}.stats{grid-template-columns:1fr 1fr;margin-bottom:23px}.stat:first-child{grid-column:1/-1}.stat strong{font-size:25px}.label{font-size:11px}.workspace{padding:17px 12px;border-radius:17px}.section-heading h2{font-size:20px}.board{grid-auto-columns:205px}.toolbar{gap:7px}.toolbar select{flex:1;min-width:130px}.plan-menu>div{right:auto;left:0}.legend{font-size:10px;gap:9px}.eyebrow{font-size:9px;letter-spacing:1.2px}.hero-copy>.eyebrow{line-height:1.8;display:block}footer{font-size:10px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 .new-requirements{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px}.new-requirements p{font-size:11px}.new-requirements>div{max-height:190px;overflow:auto}.new-requirements label{display:flex;align-items:center;gap:8px;padding:7px 0;line-height:1.5}.new-requirements input{accent-color:var(--pink)}#newCourseError{color:#99415e}#resetAll{color:#984066}#addCourse{background:var(--pink-soft);border-color:#e5bfd1}
+/* Temas. El rosado conserva la identidad original por defecto. */
+.theme-control{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+.theme-control select{padding:8px 12px;min-width:110px}
+.order-actions{display:flex;align-items:center;gap:6px;margin-top:9px;font-size:10px;color:var(--muted)}
+.order-actions span{margin-right:auto}.order-actions button{padding:5px 11px;font-size:14px;min-height:32px}
+.course.drop-before{box-shadow:0 -5px 0 0 var(--pink)}.course.drop-after{box-shadow:0 5px 0 0 var(--pink)}
+.confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+dialog:not([open]){display:none}.fallback-dialog{display:block;position:fixed;inset:5vh 0 auto;margin:auto;max-height:90vh;overflow:auto;z-index:100;box-shadow:0 0 0 100vmax #24203588}#confirmation.fallback-dialog{z-index:101}body.panel-open{overflow:hidden}
+html[data-theme="uc"]{--pink:#0867b2;--pink-dark:#084a7f;--pink-soft:#e4effb;--ink:#17344d;--muted:#576f84;--line:#d4e1ed;--paper:#ffffff;background:#f1f5f9}
+html[data-theme="dark"]{color-scheme:dark;--pink:#e89ac3;--pink-dark:#f0b7d6;--pink-soft:#3c293c;--ink:#f0eaf4;--muted:#b9adbf;--line:#493e51;--paper:#211c29;background:#16121d}
+html[data-theme="uc"] header{background:linear-gradient(110deg,#073c6b,#0867b2);border-color:#0b5d9c;border-bottom:5px solid #f5c542}
+html[data-theme="uc"] header h1,html[data-theme="uc"] header .eyebrow,html[data-theme="uc"] header p{color:#fff}
+html[data-theme="uc"] .hero-meta span{background:#ffffff1a;color:white;border-color:#ffffff55}
+html[data-theme="uc"] .career-picker{background:#ffffff;border-color:#d4e1ed}
+html[data-theme="uc"] .career-picker p{color:var(--muted)}
+html[data-theme="uc"] .stat:first-child{background:#e6f0fb;border-color:#d1e3f6}
+html[data-theme="uc"] .stat:nth-child(2){background:#fff5d9;border-color:#eddfb3}
+html[data-theme="uc"] .stat:nth-child(3){background:#e9f4ee;border-color:#d7e7df}
+html[data-theme="uc"] .bar{background:#cfdeeb}
+html[data-theme="uc"] .workspace{background:white}
+html[data-theme="uc"] .semester,html[data-theme="uc"] .semester-nav button{background:#f1f5fa}
+html[data-theme="uc"] .semester h2,html[data-theme="uc"] .semester-nav button{color:#20587f}
+html[data-theme="uc"] .course{border-color:#d7e1eb;border-top-color:var(--cat)}
+html[data-theme="uc"] .course.locked{background:#edf1f6}
+html[data-theme="uc"] .available .row button:first-child{background:#e7f1fc;color:#075b9d;border-color:#bed8ed}
+html[data-theme="uc"] #dependencies{background:#eaf2fa}
+html[data-theme="uc"] .semester.over{background:#e0effc;border-color:#4783bb}
+html[data-theme="dark"] header{background:linear-gradient(110deg,#372538,#24243b);border-color:#54405a}
+html[data-theme="dark"] header h1{color:#f5d9ec}
+html[data-theme="dark"] header p{color:#d3bdd3}
+html[data-theme="dark"] .hero-meta span{background:#2d2435;color:#e4cce1;border-color:#614964}
+html[data-theme="dark"] .career-picker{background:#211c29;border-color:#514056}
+html[data-theme="dark"] .career-picker select{background:#302636;border-color:#57475f;color:var(--ink)}
+html[data-theme="dark"] .stat:first-child{background:#352333;border-color:#56364d}
+html[data-theme="dark"] .stat:nth-child(2){background:#29253b;border-color:#484060}
+html[data-theme="dark"] .stat:nth-child(3){background:#21332f;border-color:#38564a}
+html[data-theme="dark"] .bar{background:#60405a}
+html[data-theme="dark"] .workspace{background:#211c29;border-color:#493e51}
+html[data-theme="dark"] .semester{background:#1a1721}
+html[data-theme="dark"] .course{background:#2b2434;border-color:#53465f;border-top-color:var(--cat)}
+html[data-theme="dark"] .course.locked{background:#26212e;border-color:#493e51;border-top-color:var(--cat)}
+html[data-theme="dark"] .course.approved{background:#223b31;border-color:#436d58;border-top-color:#86be9e}
+html[data-theme="dark"] .course.current{background:#342c4b;border-color:#6a5387}
+html[data-theme="dark"] .approved .state{color:#a4d7b6}
+html[data-theme="dark"] .current .state{color:#d6baf4}
+html[data-theme="dark"] .state,html[data-theme="dark"] .locked .state{color:#d0bdd8}
+html[data-theme="dark"] button,html[data-theme="dark"] .plan-menu summary,html[data-theme="dark"] .plan-menu>div{background:#302636;color:var(--ink);border-color:#5c4965}
+html[data-theme="dark"] button:hover{background:#463148;border-color:#ae7b9d}
+html[data-theme="dark"] button:disabled{background:#29232f;color:#8f829a;border-color:#44374c}
+html[data-theme="dark"] .primary,html[data-theme="dark"] #addSemester{background:#e89ac3;color:#2b1927;border-color:#e89ac3}
+html[data-theme="dark"] .primary:hover,html[data-theme="dark"] #addSemester:hover{background:#f0b7d6}
+html[data-theme="dark"] .available .row button:first-child{background:#493047;color:#f2bcda;border-color:#79506f}
+html[data-theme="dark"] .semester-nav{border-color:#493e51}
+html[data-theme="dark"] .semester-nav button{background:#35273b;color:#e5c6df}
+html[data-theme="dark"] .field input,html[data-theme="dark"] .field select{background:#302636;color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] #dependencies{background:#302336}
+html[data-theme="dark"] .save-label{background:#233a30;color:#b5d8bf}
+html[data-theme="dark"] .conflict,html[data-theme="dark"] #warning{color:#e6bf95}
+html[data-theme="dark"] .semester.over{background:#402b42;border-color:#e89ac3}
+html[data-theme="dark"] #newCourseError{color:#f7a5bf}
+html[data-theme="dark"] #resetAll{color:#f1adce}
+html[data-theme="dark"] #addCourse{background:#3c293c;border-color:#825371}
+html[data-theme="dark"] .brand-mark{background:#e89ac3;color:#261721}
+html[data-theme="uc"] .label,html[data-theme="uc"] .meta,html[data-theme="uc"] .slot,html[data-theme="uc"] .semester .sub,html[data-theme="uc"] .legend,html[data-theme="uc"] footer,
+html[data-theme="dark"] .label,html[data-theme="dark"] .meta,html[data-theme="dark"] .slot,html[data-theme="dark"] .semester .sub,html[data-theme="dark"] .legend,html[data-theme="dark"] footer,html[data-theme="dark"] .empty{color:var(--muted)}
+html[data-theme="dark"] .semester h2{color:#dbc0db}
+html[data-theme="uc"] button:hover{background:#e5f0fa;border-color:#8cb4d5}
+html[data-theme="uc"] .primary:hover,html[data-theme="uc"] #addSemester:hover{background:var(--pink-dark)}
+html[data-theme="uc"] #resetAll{color:#185b89}
+html[data-theme="uc"] #addCourse{background:#e4effb;border-color:#aac8e2}
+@media(max-width:600px){.theme-control{font-size:11px;gap:5px}.theme-control select{min-width:85px;max-width:100px;padding:8px}.site-nav{gap:8px}.brand{font-size:12px;gap:7px}.order-actions button{min-height:36px;min-width:40px}}
+
