@@ -1,6 +1,6 @@
 // Interfaz y almacenamiento. Abre index.html para usar la aplicación.
 const CARRERA = CARRERAS.find(c=>c.id===new URLSearchParams(location.search).get('carrera')) || CARRERAS[0];
-const CURSOS = CARRERA.courses;
+let CURSOS = [...CARRERA.courses];
 // Conserva el almacenamiento anterior de Administración Pública.
 const STORAGE_KEY = CARRERA.id === 'uc-administracion-publica' ? 'malla-adp-planificador-v2' : 'malla-bc-' + CARRERA.id;
 document.title = CARRERA.name + ' · malla interactiva bc';
@@ -25,7 +25,8 @@ function save() {
 try {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
-    state = Malla.validate(JSON.parse(stored), CURSOS, CARRERA.semesters);
+    state = Malla.validate(JSON.parse(stored), CARRERA.courses, CARRERA.semesters);
+    CURSOS = [...CARRERA.courses,...state.customCourses];
     if (Malla.reconcile(state, CURSOS).length) announce('Se ajustaron estados incompatibles con los prerrequisitos.');
   }
 } catch { announce('No se pudo leer el avance guardado. Puedes cargar un respaldo de esta versión.'); }
@@ -39,12 +40,14 @@ function node(tag, className, text) {
 }
 
 function render() {
+  CURSOS = [...CARRERA.courses,...state.customCourses];
   const approved = CURSOS.filter(c => Malla.status(state,c) === 'approved');
   const credits = approved.reduce((sum,c) => sum+c.credits,0);
   const total = CURSOS.reduce((sum,c) => sum+c.credits,0);
+  $('totalCredits').textContent=total+' créditos en tu plan';
   $('credits').textContent = `${credits} / ${total}`;
-  $('percent').textContent = `${Math.round(credits/total*100)}%`;
-  $('progress').style.width = `${credits/total*100}%`;
+  $('percent').textContent = `${(total ? Math.round(credits/total*100) : 0)}%`;
+  $('progress').style.width = `${total ? credits/total*100 : 0}%`;
   $('count').textContent = `${approved.length} / ${CURSOS.length}`;
   $('addSemester').disabled = state.semesters >= Malla.MAX_SEMESTRES;
   const board = $('board');
@@ -182,8 +185,8 @@ $('addSemester').onclick=()=>{
   render(); $('board').scrollLeft=$('board').scrollWidth;
 };
 $('resetPlan').onclick=()=>{
-  if(!confirm('¿Volver a los '+CARRERA.semesters+' semestres originales? Se conservarán tus aprobaciones y los nombres personalizados.')) return;
-  state.semesters=CARRERA.semesters;
+  if(!confirm('¿Volver a los '+CARRERA.semesters+' semestres originales? Se conservarán tus aprobaciones, los nombres y los ramos agregados en su semestre de creación.')) return;
+  state.semesters=Math.max(CARRERA.semesters,...state.customCourses.map(c=>c.sem));
   Object.values(state.courses).forEach(v=>delete v.semester);
   if(save()) announce('Distribución original restaurada.');
   render();
@@ -200,8 +203,8 @@ $('file').onchange=async()=>{
     if(file.size>1000000) throw Error('El archivo es demasiado grande.');
     const raw=JSON.parse(await file.text());
     if(raw.careerId ? raw.careerId!==CARRERA.id : CARRERA.id!=='uc-administracion-publica') throw Error('Este respaldo corresponde a otra carrera.');
-    const next=Malla.validate(raw,CURSOS,CARRERA.semesters);
-    const adjusted=Malla.reconcile(next,CURSOS);
+    const next=Malla.validate(raw,CARRERA.courses,CARRERA.semesters);
+    const adjusted=Malla.reconcile(next,[...CARRERA.courses,...next.customCourses]);
     if(!confirm(`¿Reemplazar tu plan con este respaldo?${adjusted.length?' Los estados incompatibles con los prerrequisitos se cambiarán a pendiente.':''}`)) return;
     state=next;
     if(save()) announce('Respaldo cargado.');
@@ -226,3 +229,42 @@ $('previousColumns').onclick=()=>$('board').scrollBy({left:-500,behavior:'smooth
 $('nextColumns').onclick=()=>$('board').scrollBy({left:500,behavior:'smooth'});
 render();
 
+
+// El reinicio afecta exclusivamente a la carrera activa, no a otras carreras.
+$('resetAll').onclick=()=>{
+  if(!confirm('¿Reiniciar toda la malla de '+CARRERA.name+'? Se borrarán aprobaciones, ramos en curso, nombres personalizados, movimientos, semestres extra y ramos agregados. Puedes cancelar y guardar un respaldo primero.')) return;
+  state=Malla.initial(CARRERA.semesters);
+  selected=null; draggedId=null;
+  $('search').value=''; $('filter').value='all';
+  if(save()) announce('Tu malla volvió a su estado inicial.');
+  render(); $('board').scrollLeft=0;
+};
+$('addCourse').onclick=()=>{
+  $('newCourseForm').reset(); $('newCourseError').textContent='';
+  $('newSemester').replaceChildren();
+  for(let sem=1;sem<=state.semesters;sem++) {
+    const option=node('option','','Semestre '+sem);option.value=sem;$('newSemester').append(option);
+  }
+  $('newRequirements').replaceChildren();
+  for(const c of CURSOS) {
+    const label=node('label'); const input=node('input');input.type='checkbox';input.value=c.id;
+    label.append(input,document.createTextNode(' '+Malla.name(state,c)+(c.code?' ('+c.code+')':'')));
+    $('newRequirements').append(label);
+  }
+  $('newCourse').showModal(); $('newName').focus();
+};
+$('closeNewCourse').onclick=()=>$('newCourse').close();
+$('newCourseForm').onsubmit=e=>{
+  e.preventDefault();
+  try {
+    const next=structuredClone(state);
+    const id='custom-'+(globalThis.crypto?.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+    next.customCourses.push({id,name:$('newName').value.trim(),code:$('newCode').value.trim(),credits:Number($('newCredits').value),sem:Number($('newSemester').value),cat:$('newCategory').value,requires:[...$('newRequirements').querySelectorAll('input:checked')].map(n=>n.value),editable:true});
+    state=Malla.validate(next,CARRERA.courses,CARRERA.semesters);
+    $('search').value=''; $('filter').value='all';
+    if(save()) announce('Ramo agregado a tu plan. También se incluirá en tus respaldos.');
+    render(); $('newCourse').close();
+    const target=$('semester-'+Malla.semester(state,find(id)));
+    $('board').scrollTo({left:target.offsetLeft-$('board').offsetLeft,behavior:'smooth'});
+  } catch(e) { $('newCourseError').textContent=e.message; }
+};

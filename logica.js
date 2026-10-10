@@ -1,7 +1,7 @@
 // Funciones puras: no dependen del navegador y se pueden probar con Node.
 const Malla = (() => {
   const MAX_SEMESTRES = 30;
-  const initial = (semesters=10) => ({version:2, semesters, courses:{}});
+  const initial = (semesters=10) => ({version:2, semesters, courses:{}, customCourses:[]});
   const entry = (state,id) => state.courses[id] || {};
   const semester = (state,c) => entry(state,c.id).semester || c.sem;
   const name = (state,c) => entry(state,c.id).name || c.name;
@@ -51,6 +51,31 @@ const Malla = (() => {
   function validate(raw,courses,baseSemesters=10) {
     if (!raw || raw.version!==2 || !Number.isInteger(raw.semesters) || raw.semesters<baseSemesters || raw.semesters>MAX_SEMESTRES || !raw.courses || typeof raw.courses!=='object' || Array.isArray(raw.courses)) throw Error('Respaldo incompatible. Se requiere un respaldo de esta versión.');
     const clean=initial(); clean.semesters=raw.semesters;
+    const custom=raw.customCourses ?? [];
+    if(!Array.isArray(custom)||custom.length>200) throw Error('Lista de ramos personalizados inválida (máximo 200).');
+    const ids=new Set(courses.map(c=>c.id));
+    for(const c of custom) {
+      if(!c || typeof c.id!=='string' || !/^custom-[a-zA-Z0-9-]+$/.test(c.id) || ids.has(c.id)) throw Error('Identificador de ramo personalizado inválido o repetido.');
+      if(typeof c.name!=='string'||!c.name.trim()||c.name.length>120||typeof c.code!=='string'||c.code.length>30) throw Error('Nombre o sigla inválidos.');
+      if(!Number.isInteger(c.credits)||c.credits<0||c.credits>100||!Number.isInteger(c.sem)||c.sem<1||c.sem>raw.semesters) throw Error('Créditos o semestre inválidos.');
+      if(!['base','prof','fg','minor'].includes(c.cat)||!Array.isArray(c.requires)||c.requires.some(id=>typeof id!=='string')) throw Error('Categoría o prerrequisitos inválidos.');
+      ids.add(c.id);
+      clean.customCourses.push({id:c.id,name:c.name.trim(),code:c.code.trim(),credits:c.credits,sem:c.sem,cat:c.cat,requires:[...new Set(c.requires)],editable:true});
+    }
+    courses=[...courses,...clean.customCourses];
+    const visiting=new Set(),visited=new Set();
+    function visit(c) {
+      if(visiting.has(c.id)) throw Error('Los prerrequisitos forman un ciclo.');
+      if(visited.has(c.id)) return;
+      visiting.add(c.id);
+      for(const id of c.requires) {
+        const r=courses.find(r=>r.id===id);
+        if(!r) throw Error('Prerrequisito inexistente.');
+        visit(r);
+      }
+      visiting.delete(c.id); visited.add(c.id);
+    }
+    courses.forEach(visit);
     for(const [id,value] of Object.entries(raw.courses)) {
       const c=courses.find(r=>r.id===id);
       if(!c || !value || typeof value!=='object' || Array.isArray(value)) throw Error('Ramo inválido en respaldo.');
