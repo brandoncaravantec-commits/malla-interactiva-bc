@@ -42,8 +42,8 @@ function node(tag, className, text) {
 function render() {
   CURSOS = [...CARRERA.courses,...state.customCourses];
   const approved = CURSOS.filter(c => Malla.status(state,c) === 'approved');
-  const credits = approved.reduce((sum,c) => sum+c.credits,0);
-  const total = CURSOS.reduce((sum,c) => sum+c.credits,0);
+  const credits = approved.reduce((sum,c) => sum+Malla.credits(state,c),0);
+  const total = CURSOS.reduce((sum,c) => sum+Malla.credits(state,c),0);
   $('totalCredits').textContent=total+' créditos en tu plan';
   $('credits').textContent = `${credits} / ${total}`;
   $('percent').textContent = `${(total ? Math.round(credits/total*100) : 0)}%`;
@@ -67,7 +67,7 @@ function render() {
     column.setAttribute('aria-label', `Semestre ${sem}`);
     const list = Malla.ordered(state,CURSOS,sem);
     column.append(node('h2','',`SEMESTRE ${sem}`));
-    column.append(node('p','sub',`${list.length} ramos · ${list.reduce((sum,c)=>sum+c.credits,0)} créditos planificados`));
+    column.append(node('p','sub',`${list.length} ramos · ${list.reduce((sum,c)=>sum+Malla.credits(state,c),0)} créditos planificados`));
     // HTML Drag and Drop para escritorio. En móvil o con teclado usa Detalles.
     column.addEventListener('dragover', e => {
       if (!draggedId) return;
@@ -124,7 +124,7 @@ function card(c) {
   });
   card.append(node('h3','',Malla.name(state,c)));
   if (Malla.entry(state,c.id).name) card.append(node('div','slot',c.name));
-  card.append(node('div','meta',`${c.code||'Electivo'} · ${c.credits} cr. · Origen: S${c.sem}`));
+  card.append(node('div','meta',`${c.code||'Electivo'} · ${Malla.credits(state,c)} cr. · Origen: S${c.sem}`));
   card.append(node('div','state',LABELS[status]));
   if (Malla.conflicts(state,c,CURSOS).length) card.append(node('p','conflict','⚠ Revisa el orden: hay prerrequisitos pendientes en este semestre o después.'));
   const actions=node('div','row');
@@ -168,12 +168,14 @@ async function updateStatus(c,value) {
 function openDetail(c) {
   selected=c;
   $('title').textContent=Malla.name(state,c);
-  $('description').textContent=`${c.name} · ${c.code||'Electivo'} · ${c.credits} créditos`;
+  $('description').textContent=`${c.name} · ${c.code||'Electivo'} · ${Malla.credits(state,c)} créditos`;
   $('dependencies').replaceChildren();
   const requires=c.requires.map(id=>`${Malla.entry(state,id).status==='approved'?'✓':'○'} ${Malla.name(state,find(id))}`);
   const unlocks=CURSOS.filter(r=>r.requires.includes(c.id)).map(r=>Malla.name(state,r));
   $('dependencies').append(node('p','',`Requiere aprobar: ${requires.join(' + ')||'Sin prerrequisitos registrados'}.`));
   $('dependencies').append(node('p','',`Es prerrequisito de: ${unlocks.join(', ')||'Ningún ramo registrado'}.`));
+  $('editCredits').value=Malla.credits(state,c);
+  $('creditOriginal').textContent='Valor de la malla original: '+c.credits+' créditos.';
   $('nameField').hidden=!c.editable;
   $('customName').value=Malla.entry(state,c.id).name||'';
   $('semesterSelect').replaceChildren();
@@ -192,12 +194,17 @@ $('close').onclick=()=>closePanel($('detail'));
 $('saveDetail').onclick=async()=>{
   const next=clonePlan(state);
   try {
+    const creditInput=$('editCredits');
+    if(!creditInput.checkValidity()||!creditInput.value.trim()) throw Error('Ingresa créditos enteros entre 0 y 100.');
+    const newCredits=Number(creditInput.value),oldCredits=Malla.credits(state,selected);
+    Malla.setCredits(next,selected,newCredits);
+    if(newCredits!==oldCredits && !await askConfirmation('Vas a cambiar los créditos de '+Malla.name(state,selected)+' de '+oldCredits+' a '+newCredits+'. Esto modificará los créditos totales de tu plan y puede cambiar tu porcentaje de avance. Confirma que el valor corresponde a tu plan de estudios. ¿Guardar el cambio?')) return;
     Malla.moveAt(next,selected,Number($('semesterSelect').value),Number($('positionSelect').value),CURSOS);
     if(selected.editable) next.courses[selected.id].name=$('customName').value.trim();
     if(!await applyStatus(next,selected,$('statusSelect').value)) return;
     state=next;
     if(save()) announce('Cambios guardados.');
-    render(); $('detail').close();
+    render(); closePanel($('detail'));
   } catch(e) { $('warning').textContent=e.message; }
 };
 $('search').oninput=render;
@@ -240,7 +247,7 @@ $('file').onchange=async()=>{
 $('careerTitle').textContent=CARRERA.name;
 $('university').textContent=CARRERA.university;
 $('duration').textContent=CARRERA.semesters+' semestres';
-$('totalCredits').textContent=CURSOS.reduce((sum,c)=>sum+c.credits,0)+' créditos';
+$('totalCredits').textContent=CURSOS.reduce((sum,c)=>sum+Malla.credits(state,c),0)+' créditos';
 for(const career of CARRERAS) {
   const option=node('option','',career.name); option.value=career.id; $('careerSelect').append(option);
 }
@@ -253,7 +260,7 @@ $('previousColumns').onclick=()=>$('board').scrollBy({left:-500,behavior:'smooth
 $('nextColumns').onclick=()=>$('board').scrollBy({left:500,behavior:'smooth'});
 // El reinicio afecta exclusivamente a la carrera activa, no a otras carreras.
 $('resetAll').onclick=async()=>{
-  if(!await askConfirmation('¿Reiniciar toda la malla de '+CARRERA.name+'? Se borrarán aprobaciones, ramos en curso, nombres personalizados, movimientos, semestres extra y ramos agregados. Puedes cancelar y guardar un respaldo primero.')) return;
+  if(!await askConfirmation('¿Reiniciar toda la malla de '+CARRERA.name+'? Se borrarán aprobaciones, ramos en curso, nombres personalizados, créditos modificados, movimientos, semestres extra y ramos agregados. Puedes cancelar y guardar un respaldo primero.')) return;
   state=Malla.initial(CARRERA.semesters);
   selected=null; draggedId=null;
   $('search').value=''; $('filter').value='all';

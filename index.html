@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Malla interactiva bc</title>
-<link rel="stylesheet" href="estilos.css?v=3.0"></head><body>
+<link rel="stylesheet" href="estilos.css?v=3.1"></head><body>
 <nav class="site-nav" aria-label="Navegación principal">
   <a class="brand" href="index.html"><span class="brand-mark">bc<span>·</span></span><span>malla interactiva <b>bc</b></span></a>
   <label class="theme-control" for="themeSelect">Tema <select id="themeSelect"><option value="pink">Rosado</option><option value="uc">Azul UC</option><option value="dark">Oscuro</option></select></label>
@@ -17,11 +17,13 @@
 <div id="feedback" role="status" aria-live="polite">Tu avance se guarda en este navegador.</div>
 <div class="legend"><span style="--cat:#b7a4c8"><i class="dot"></i>Disciplinares y otros</span><span style="--cat:#d6a0b8"><i class="dot"></i>Formación profesional</span><span style="--cat:#8ebcae"><i class="dot"></i>Minor</span><span style="--cat:#a5b9d7"><i class="dot"></i>Formación general</span><span style="--cat:#83b799"><i class="dot"></i>Aprobado</span></div>
 <div class="help-line"><span class="help-icon">↔</span><p>Arrastra entre ramos para ordenar · Usa ↑ ↓ o Detalles en celular · Aprueba para desbloquear · Personaliza tus electivos en <b>Detalles</b></p></div><div class="semester-nav" id="semesterNav" aria-label="Ir a un semestre"></div>
-<section class="board" id="board" aria-label="Malla por semestre"></section></section><footer><span>malla interactiva <b>bc</b></span><span>Brandon Caravante · v3.0</span></footer></main>
+<section class="board" id="board" aria-label="Malla por semestre"></section></section><footer><span>malla interactiva <b>bc</b></span><span>Brandon Caravante · v3.1</span></footer></main>
 <dialog id="detail" aria-labelledby="title">
   <button id="close" class="close" aria-label="Cerrar">✕</button>
   <h2 id="title"></h2><p id="description"></p>
   <div id="dependencies"></div>
+  <label class="field">Créditos del ramo<input id="editCredits" type="number" min="0" max="100" step="1" required aria-describedby="creditOriginal creditNotice"></label>
+  <p id="creditOriginal"></p><p id="creditNotice">Cambiar los créditos modifica los totales y el avance de tu plan. Se solicitará confirmación antes de guardar.</p>
   <label class="field" id="nameField">Nombre del curso elegido (OFG, minor u optativo)
     <input id="customName" maxlength="120" placeholder="Ejemplo: Introducción a la fotografía">
   </label>
@@ -45,9 +47,9 @@
   </form>
 </dialog>
 <dialog id="confirmation" aria-labelledby="confirmTitle"><h2 id="confirmTitle">Confirmar cambio</h2><p id="confirmMessage"></p><div class="confirm-actions"><button id="confirmCancel" type="button">Cancelar</button><button id="confirmAccept" type="button" class="primary">Confirmar</button></div></dialog>
-<script src="compatibilidad.js?v=3.0"></script>
-<script src="datos.js?v=3.0"></script>
-<script src="carreras.js?v=3.0"></script>
-<script src="logica.js?v=3.0"></script>
-<script src="app.js?v=3.0"></script></body></html>
+<script src="compatibilidad.js?v=3.1"></script>
+<script src="datos.js?v=3.1"></script>
+<script src="carreras.js?v=3.1"></script>
+<script src="logica.js?v=3.1"></script>
+<script src="app.js?v=3.1"></script></body></html>
 

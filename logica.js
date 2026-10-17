@@ -5,6 +5,11 @@ const Malla = (() => {
   const entry = (state,id) => state.courses[id] || {};
   const semester = (state,c) => entry(state,c.id).semester || c.sem;
   const name = (state,c) => entry(state,c.id).name || c.name;
+  const credits = (state,c) => entry(state,c.id).credits ?? c.credits;
+  function setCredits(state,c,value) {
+    if(!Number.isInteger(value)||value<0||value>100) throw Error('Ingresa créditos enteros entre 0 y 100.');
+    state.courses[c.id]={...entry(state,c.id),credits:value};
+  }
   const missing = (state,c) => c.requires.filter(id => entry(state,id).status !== 'approved');
   const status = (state,c) => entry(state,c.id).status === 'approved' ? 'approved'
     : missing(state,c).length ? 'locked'
@@ -95,6 +100,10 @@ const Malla = (() => {
       const c=courses.find(r=>r.id===id);
       if(!c || !value || typeof value!=='object' || Array.isArray(value)) throw Error('Ramo inválido en respaldo.');
       const v={};
+      if(value.credits!==undefined) {
+        if(!Number.isInteger(value.credits)||value.credits<0||value.credits>100) throw Error('Créditos inválidos en respaldo.');
+        v.credits=value.credits;
+      }
       if(value.order!==undefined) {
         if(!Number.isInteger(value.order)||value.order<0||value.order>courses.length) throw Error('Posición inválida en respaldo.');
         v.order=value.order;
@@ -115,6 +124,6 @@ const Malla = (() => {
     }
     return clean;
   }
-  return {MAX_SEMESTRES,initial,entry,semester,name,missing,status,move,moveAt,ordered,reconcile,setStatus,conflicts,validate};
+  return {MAX_SEMESTRES,initial,entry,semester,name,credits,setCredits,missing,status,move,moveAt,ordered,reconcile,setStatus,conflicts,validate};
 })();
 if(typeof module!=='undefined') module.exports=Malla;
