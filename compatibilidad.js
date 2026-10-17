@@ -51,7 +51,7 @@ document.addEventListener('keydown',e=>{
 });
 function showLoadError() {
   const feedback=document.getElementById('feedback');
-  if(feedback) feedback.textContent='No se pudo completar una acción. Recarga la página. Si continúa, comprueba que todos los archivos publicados sean de la versión 3.1.';
+  if(feedback) feedback.textContent='No se pudo completar una acción. Recarga la página. Si continúa, comprueba que todos los archivos publicados sean de la versión 3.3.';
 }
 window.addEventListener('error',showLoadError);
 window.addEventListener('unhandledrejection',showLoadError);

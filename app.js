@@ -92,7 +92,8 @@ function render() {
         const found=target.findIndex(c=>c.id===hit.dataset.courseId);
         if(found>=0) index=found+(e.clientY >= hit.getBoundingClientRect().top+hit.getBoundingClientRect().height/2?1:0);
       }
-      Malla.moveAt(state,course,sem,index,CURSOS);
+      try { Malla.moveAt(state,course,sem,index,CURSOS); }
+      catch(error) { render(); announce(error.message); return; }
       if(save()) announce(`${Malla.name(state,course)} movido al semestre ${sem}.`);
       render();
     });
@@ -126,7 +127,7 @@ function card(c) {
   if (Malla.entry(state,c.id).name) card.append(node('div','slot',c.name));
   card.append(node('div','meta',`${c.code||'Electivo'} · ${Malla.credits(state,c)} cr. · Origen: S${c.sem}`));
   card.append(node('div','state',LABELS[status]));
-  if (Malla.conflicts(state,c,CURSOS).length) card.append(node('p','conflict','⚠ Revisa el orden: hay prerrequisitos pendientes en este semestre o después.'));
+  if (Malla.conflicts(state,c,CURSOS).length) card.append(node('p','conflict','⚠ Revisa el orden: hay prerrequisitos en este semestre o después.'));
   const actions=node('div','row');
   const approve=node('button','',status==='approved'?'Desmarcar':'Aprobar');
   approve.disabled = status==='locked';
@@ -217,8 +218,11 @@ $('addSemester').onclick=()=>{
 };
 $('resetPlan').onclick=async()=>{
   if(!await askConfirmation('¿Volver a los '+CARRERA.semesters+' semestres originales? Se conservarán tus aprobaciones, los nombres y los ramos agregados en su semestre de creación.')) return;
-  state.semesters=Math.max(CARRERA.semesters,...state.customCourses.map(c=>c.sem));
-  Object.values(state.courses).forEach(v=>{delete v.semester;delete v.order;});
+  const candidate=clonePlan(state);
+  candidate.semesters=Math.max(CARRERA.semesters,...candidate.customCourses.map(c=>c.sem));
+  Object.values(candidate.courses).forEach(v=>{delete v.semester;delete v.order;});
+  try {Malla.checkPlan(candidate,CURSOS);}catch(error){announce('No se restauró la distribución: '+error.message);return;}
+  state=candidate;
   if(save()) announce('Distribución original restaurada.');
   render();
 };
@@ -235,6 +239,7 @@ $('file').onchange=async()=>{
     const raw=JSON.parse(await file.text());
     if(raw.careerId ? raw.careerId!==CARRERA.id : CARRERA.id!=='uc-administracion-publica') throw Error('Este respaldo corresponde a otra carrera.');
     const next=Malla.validate(raw,CARRERA.courses,CARRERA.semesters);
+    Malla.checkPlan(next,[...CARRERA.courses,...next.customCourses]);
     const adjusted=Malla.reconcile(next,[...CARRERA.courses,...next.customCourses]);
     if(!await askConfirmation(`¿Reemplazar tu plan con este respaldo?${adjusted.length?' Los estados incompatibles con los prerrequisitos se cambiarán a pendiente.':''}`)) return;
     state=next;
@@ -288,9 +293,11 @@ $('newCourseForm').onsubmit=e=>{
     const next=clonePlan(state);
     const id='custom-'+(globalThis.crypto?.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
     next.customCourses.push({id,name:$('newName').value.trim(),code:$('newCode').value.trim(),credits:Number($('newCredits').value),sem:Number($('newSemester').value),cat:$('newCategory').value,requires:[...$('newRequirements').querySelectorAll('input:checked')].map(n=>n.value),editable:true});
-    state=Malla.validate(next,CARRERA.courses,CARRERA.semesters);
-    const all=[...CARRERA.courses,...state.customCourses],added=all.find(c=>c.id===id);
-    Malla.moveAt(state,added,added.sem,Malla.ordered(state,all,added.sem).filter(c=>c.id!==id).length,all);
+    const candidate=Malla.validate(next,CARRERA.courses,CARRERA.semesters);
+    const all=[...CARRERA.courses,...candidate.customCourses],added=all.find(c=>c.id===id);
+    Malla.checkPlacement(candidate,added,added.sem,all);
+    Malla.moveAt(candidate,added,added.sem,Malla.ordered(candidate,all,added.sem).filter(c=>c.id!==id).length,all);
+    state=candidate;
     $('search').value=''; $('filter').value='all';
     if(save()) announce('Ramo agregado a tu plan. También se incluirá en tus respaldos.');
     render(); $('newCourse').close();
@@ -319,3 +326,6 @@ function applyTheme(value) {document.documentElement.dataset.theme=value;$('them
 applyTheme(theme);
 $('themeSelect').onchange=()=>{applyTheme($('themeSelect').value);try{localStorage.setItem(THEME_KEY,$('themeSelect').value);}catch{announce('Tema aplicado durante esta sesión.');}};
 render();
+
+// Conserva planes guardados con versiones anteriores; señala conflictos sin borrar el avance.
+try {Malla.checkPlan(state,CURSOS);}catch(error){announce('Tu plan anterior tiene un orden que debes corregir. '+error.message);}

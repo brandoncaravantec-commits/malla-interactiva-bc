@@ -29,10 +29,24 @@ const Malla = (() => {
     const source=semester(state,c);
     const target=ordered(state,courses,sem).filter(r=>r.id!==c.id);
     if(!Number.isInteger(index)||index<0||index>target.length) throw Error('Posición inválida.');
+    if(source!==sem) checkPlacement(state,c,sem,courses);
     move(state,c,sem);
     target.splice(index,0,c);
     target.forEach((r,i)=>state.courses[r.id]={...entry(state,r.id),order:i});
     if(source!==sem) ordered(state,courses,source).forEach((r,i)=>state.courses[r.id]={...entry(state,r.id),order:i});
+  }
+
+  function checkPlacement(state,c,sem,courses) {
+    for(const id of c.requires) {
+      const prerequisite=courses.find(r=>r.id===id);
+      if(semester(state,prerequisite)>=sem) throw Error('No se puede ubicar '+name(state,c)+' en el semestre '+sem+': '+name(state,prerequisite)+' debe estar en un semestre anterior.');
+    }
+    for(const dependent of courses.filter(r=>r.requires.includes(c.id))) {
+      if(semester(state,dependent)<=sem) throw Error('No se puede mover '+name(state,c)+' al semestre '+sem+': es prerrequisito de '+name(state,dependent)+' (semestre '+semester(state,dependent)+') y debe ir antes. Mueve primero el ramo dependiente.');
+    }
+  }
+  function checkPlan(state,courses) {
+    courses.forEach(c=>checkPlacement(state,c,semester(state,c),courses));
   }
 
   // Si se desmarca un prerrequisito, sus dependientes vuelven a pendiente.
@@ -64,7 +78,7 @@ const Malla = (() => {
   function conflicts(state,c,courses) {
     return c.requires.filter(id => {
       const prerequisite=courses.find(r=>r.id===id);
-      return entry(state,id).status!=='approved' && semester(state,prerequisite)>=semester(state,c);
+      return semester(state,prerequisite)>=semester(state,c);
     });
   }
 
@@ -124,6 +138,6 @@ const Malla = (() => {
     }
     return clean;
   }
-  return {MAX_SEMESTRES,initial,entry,semester,name,credits,setCredits,missing,status,move,moveAt,ordered,reconcile,setStatus,conflicts,validate};
+  return {MAX_SEMESTRES,initial,entry,semester,name,credits,setCredits,missing,status,move,moveAt,ordered,checkPlacement,checkPlan,reconcile,setStatus,conflicts,validate};
 })();
 if(typeof module!=='undefined') module.exports=Malla;

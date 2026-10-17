@@ -1,4 +1,5 @@
-// Edita aquí los ramos y sus prerrequisitos. Cada id es único y no cambia al mover el ramo.
+// Prerrequisitos según las capturas y confirmación del cliente (16/10/2026).
+// Conserva los id: se usan para recuperar el avance existente.
 const RAMOS = [
   {
     "id": "s1r1",
@@ -151,9 +152,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "base",
     "sem": 3,
-    "requires": [
-      "s2r2"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -163,9 +162,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "base",
     "sem": 3,
-    "requires": [
-      "s1r3"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -196,8 +193,7 @@ const RAMOS = [
     "cat": "base",
     "sem": 4,
     "requires": [
-      "s3r1",
-      "s3r2"
+      "s3r1"
     ],
     "editable": false
   },
@@ -220,9 +216,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "base",
     "sem": 4,
-    "requires": [
-      "s1r2"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -232,9 +226,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "base",
     "sem": 4,
-    "requires": [
-      "s2r4"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -254,9 +246,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "base",
     "sem": 5,
-    "requires": [
-      "s4r1"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -277,7 +267,7 @@ const RAMOS = [
     "cat": "prof",
     "sem": 5,
     "requires": [
-      "s3r3"
+      "s1r2"
     ],
     "editable": false
   },
@@ -311,7 +301,7 @@ const RAMOS = [
     "cat": "prof",
     "sem": 6,
     "requires": [
-      "s5r1"
+      "s3r1"
     ],
     "editable": false
   },
@@ -323,7 +313,7 @@ const RAMOS = [
     "cat": "prof",
     "sem": 6,
     "requires": [
-      "s4r2"
+      "s4r1"
     ],
     "editable": false
   },
@@ -335,7 +325,8 @@ const RAMOS = [
     "cat": "prof",
     "sem": 6,
     "requires": [
-      "s5r3"
+      "s2r2",
+      "s3r2"
     ],
     "editable": false
   },
@@ -366,9 +357,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "prof",
     "sem": 7,
-    "requires": [
-      "s6r1"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -420,9 +409,7 @@ const RAMOS = [
     "credits": 10,
     "cat": "prof",
     "sem": 8,
-    "requires": [
-      "s7r1"
-    ],
+    "requires": [],
     "editable": false
   },
   {
@@ -433,8 +420,7 @@ const RAMOS = [
     "cat": "prof",
     "sem": 8,
     "requires": [
-      "s6r2",
-      "s6r3"
+      "s6r1"
     ],
     "editable": false
   },
@@ -535,7 +521,9 @@ const RAMOS = [
     "credits": 35,
     "cat": "base",
     "sem": 10,
-    "requires": [],
+    "requires": [
+      "s8r2"
+    ],
     "editable": false
   },
   {
